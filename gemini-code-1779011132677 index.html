@@ -1,134 +1,204 @@
-<!DOCTYPE html>
-<html lang="bn">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>অমিত রায় - পোর্টফোলিও</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        body {
-            background-color: #f4f7f6;
-            color: #333;
-            line-height: 1.6;
-        }
-        header {
-            background: linear-gradient(135deg, #4f46e5, #06b6d4);
-            color: white;
-            text-align: center;
-            padding: 50px 20px;
-        }
-        header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-        .container {
-            max-width: 800px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-        }
-        .card h2 {
-            color: #4f46e5;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #e5e7eb;
-            padding-bottom: 5px;
-        }
-        .skills-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .skill-tag {
-            background: #e0e7ff;
-            color: #4338ca;
-            padding: 8px 12px;
-            border-radius: 20px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 0.9rem;
-        }
-        ul {
-            list-style-position: inside;
-            margin-left: 10px;
-        }
-        li {
-            margin-bottom: 8px;
-        }
-        footer {
-            text-align: center;
-            padding: 20px;
-            margin-top: 40px;
-            background: #1e293b;
-            color: white;
-            font-size: 0.9rem;
-        }
-    </style>
-</head>
-<body>
+import pygame
+import random
+import sys
 
-    <header>
-        <h1>অমিত রায় (Amit Roy)</h1>
-        <p>কলেজ শিক্ষার্থী ও গৃহশিক্ষক (Private Tutor)</p>
-    </header>
+# Initialize Pygame
+pygame.init()
 
-    <div class="container">
+# --- CONSTANTS & GAME CONFIG ---
+SCREEN_WIDTH = 500
+SCREEN_HEIGHT = 600
+FPS = 60
+
+# Colors (RGB)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GRAY = (50, 50, 50)
+YELLOW = (255, 255, 0)
+RED = (220, 20, 60)
+BLUE = (30, 144, 255)
+GREEN = (50, 205, 50)
+
+# Create the game window
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+# =======================================================
+# এখানে আপনার পছন্দমতো গেমের টাইটেল বা নাম সেট করা হয়েছে:
+pygame.display.set_caption("Amit's Car Game")
+# =======================================================
+
+clock = pygame.time.Clock()
+
+# Fonts
+font_score = pygame.font.SysFont("Arial", 24, bold=True)
+font_game_over = pygame.font.SysFont("Arial", 50, bold=True)
+font_restart = pygame.font.SysFont("Arial", 20)
+
+
+# --- GAME OBJECT CLASSES ---
+
+class PlayerCar:
+    """Class representing the user-controlled car."""
+    def __init__(self):
+        self.width = 40
+        self.height = 70
+        self.x = (SCREEN_WIDTH // 2) - (self.width // 2)
+        self.y = SCREEN_HEIGHT - self.height - 30
+        self.speed = 6
+        self.min_x = 80 
+        self.max_x = SCREEN_WIDTH - 80 - self.width
+
+    def handle_keys(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            self.x -= self.speed
+        if keys[pygame.K_RIGHT]:
+            self.x += self.speed
+            
+        if self.x < self.min_x:
+            self.x = self.min_x
+        elif self.x > self.max_x:
+            self.x = self.max_x
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, BLUE, (self.x, self.y, self.width, self.height), border_radius=5)
+        pygame.draw.rect(surface, WHITE, (self.x + 5, self.y + 15, self.width - 10, 20), border_radius=3)
+        pygame.draw.rect(surface, BLACK, (self.x - 5, self.y + 10, 5, 15))
+        pygame.draw.rect(surface, BLACK, (self.x + self.width, self.y + 10, 5, 15))
+        pygame.draw.rect(surface, BLACK, (self.x - 5, self.y + 45, 5, 15))
+        pygame.draw.rect(surface, BLACK, (self.x + self.width, self.y + 45, 5, 15))
+
+    def get_rect(self):
+        return pygame.Rect(self.x, self.y, self.width, self.height)
+
+
+class ObstacleCar:
+    """Class representing oncoming traffic obstacles."""
+    def __init__(self, speed):
+        self.width = 40
+        self.height = 70
+        self.x = random.randint(80, SCREEN_WIDTH - 80 - self.width)
+        self.y = random.randint(-300, -100)
+        self.speed = speed
+        self.color = random.choice([RED, GREEN, YELLOW])
+
+    def update(self):
+        self.y += self.speed
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.color, (self.x, self.y, self.width, self.height), border_radius=5)
+        pygame.draw.rect(surface, BLACK, (self.x + 5, self.y + self.height - 35, self.width - 10, 20), border_radius=3)
+        pygame.draw.rect(surface, BLACK, (self.x - 5, self.y + 10, 5, 15))
+        pygame.draw.rect(surface, BLACK, (self.x + self.width, self.y + 10, 5, 15))
+        pygame.draw.rect(surface, BLACK, (self.x - 5, self.y + 45, 5, 15))
+        pygame.draw.rect(surface, BLACK, (self.x + self.width, self.y + 45, 5, 15))
+
+    def is_off_screen(self):
+        return self.y > SCREEN_HEIGHT
+
+    def get_rect(self):
+        return pygame.Rect(self.x, self.y, self.width, self.height)
+
+
+# --- ENVIRONMENT GENERATION ---
+
+def draw_background(surface, lane_offset):
+    surface.fill((34, 139, 34)) 
+    road_left = 70
+    road_width = SCREEN_WIDTH - 140
+    pygame.draw.rect(surface, GRAY, (road_left, 0, road_width, SCREEN_HEIGHT))
+    
+    pygame.draw.line(surface, WHITE, (road_left, 0), (road_left, SCREEN_HEIGHT), 4)
+    pygame.draw.line(surface, WHITE, (road_left + road_width, 0), (road_left + road_width, SCREEN_HEIGHT), 4)
+    
+    lane_x = SCREEN_WIDTH // 2
+    dash_length = 30
+    gap_length = 20
+    
+    y = -dash_length + lane_offset
+    while y < SCREEN_HEIGHT:
+        pygame.draw.line(surface, YELLOW, (lane_x, y), (lane_x, y + dash_length), 3)
+        y += dash_length + gap_length
+
+
+# --- MAIN GAME LOOP CONTROLLER ---
+
+def main():
+    player = PlayerCar()
+    obstacles = []
+    base_obstacle_speed = 4
+    max_obstacles = 3
+    score = 0
+    lane_offset = 0
+    game_over = False
+    running = True
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+                sys.exit()
+                
+            if event.type == pygame.KEYDOWN:
+                if game_over and event.key == pygame.K_r:
+                    main()
+                    return
+
+        if not game_over:
+            player.handle_keys()
+            
+            lane_offset += base_obstacle_speed
+            if lane_offset >= 50:
+                lane_offset = 0
+
+            current_speed = base_obstacle_speed + (score // 10)
+            
+            if len(obstacles) < max_obstacles:
+                if len(obstacles) == 0 or obstacles[-1].y > 150:
+                    obstacles.append(ObstacleCar(current_speed))
+
+            for obs in obstacles:
+                obs.update()
+                
+            for obs in obstacles[:]:
+                if obs.is_off_screen():
+                    obstacles.remove(obs)
+                    score += 1
+
+            player_rect = player.get_rect()
+            for obs in obstacles:
+                if player_rect.colliderect(obs.get_rect()):
+                    game_over = True
+
+        draw_background(screen, lane_offset)
+        player.draw(screen)
         
-        <!-- নিজের সম্পর্কে -->
-        <div class="card">
-            <h2>আমার সম্পর্কে</h2>
-            <p>আমি অমিত রায়। বর্তমানে শিলিগুড়ি সূর্য সেন মহাবিদ্যালয়ের ২য় বর্ষের (৪র্থ সেমিস্টার) একজন ছাত্র। পড়াশোনার পাশাপাশি আমি ছোট ছেলেমেয়েদের টিউশন পড়াতে এবং নতুন নতুন কম্পিউটার টেকনোলজি ও সফটওয়্যার স্কিল শিখতে পছন্দ করি।</p>
-        </div>
+        for obs in obstacles:
+            obs.draw(screen)
 
-        <!-- শিক্ষাগত যোগ্যতা -->
-        <div class="card">
-            <h2>শিক্ষাগত যোগ্যতা (Education)</h2>
-            <ul>
-                <li><strong>উচ্চ মাধ্যমিক:</strong> নীল নলিনী বিদ্যামন্দির</li>
-                <li><strong>মাধ্যমিক:</strong> সালুগাড়া হাই স্কুল</li>
-                <li><strong>প্রাথমিক শিক্ষা:</strong> নির্মলা কনভেন্ট স্কুল</li>
-            </ul>
-        </div>
+        score_text = font_score.render(f"Score: {score}", True, WHITE)
+        screen.blit(score_text, (15, 15))
 
-        <!-- কম্পিউটার ও টেকনিক্যাল স্কিল -->
-        <div class="card">
-            <h2>কারিগরি দক্ষতা (Skills)</h2>
-            <div class="skills-grid">
-                <div class="skill-tag">Microsoft Excel</div>
-                <div class="skill-tag">MS Word</div>
-                <div class="skill-tag">PowerPoint</div>
-                <div class="skill-tag">Tally Prime</div>
-                <div class="skill-tag">Video Editing</div>
-                <div class="skill-tag">HTML & CSS</div>
-            </div>
-        </div>
+        if game_over:
+            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 150)) 
+            screen.blit(overlay, (0, 0))
+            
+            go_text = font_game_over.render("GAME OVER", True, RED)
+            go_rect = go_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
+            screen.blit(go_text, go_rect)
+            
+            final_score_text = font_score.render(f"Final Score: {score}", True, WHITE)
+            fs_rect = final_score_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 15))
+            screen.blit(final_score_text, fs_rect)
 
-        <!-- বর্তমান কোর্স ও প্রজেক্ট -->
-        <div class="card">
-            <h2>চলমান কোর্স ও অন্যান্য</h2>
-            <p>বর্তমানে আমি কলেজের পড়াশোনার পাশাপাশি <strong>EDUHEALIT PRIVATE LIMITED</strong> থেকে <em>Office Executive Associate</em> কোর্সটি করছি, যা আমার প্রফেশনাল স্কিল উন্নত করতে সাহায্য করছে।</p>
-        </div>
+            restart_text = font_restart.render("Press 'R' to Restart Game", True, YELLOW)
+            r_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 60))
+            screen.blit(restart_text, r_rect)
 
-    </div>
+        pygame.display.flip()
+        clock.tick(FPS)
 
-    <footer>
-        <p>© 2026 অমিত রায় | সর্বস্বত্ব সংরক্ষিত।</p>
-    </footer>
-
-</body>
-</html>
+if __name__ == "__main__":
+    main()
